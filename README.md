@@ -462,7 +462,7 @@ See [BUGFIXES.md](BUGFIXES.md) for details.
 If you enjoy BlackjARK, consider supporting development:
 
 ```
-ARK Address: ark1q8gf2tvdw0s3jn54khce6mua7lqpzry9x8gf2tvdw0s3jn54khce6mu
+ARK Address: ark1qq4hfssprtcgnjzf8qlw2f78yvjau5kldfugg29k34y7j96q2w4t5akn6r7r5q4rg5um6mu49y9z56atp8rvp6q002c2p0d2zwrfzk3k74j9tz
 ```
 
 <div align="center">
