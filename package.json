@@ -1,0 +1,32 @@
+{
+  "name": "blackjark",
+  "version": "1.0.0",
+  "description": "BlackjARK - Casino Blackjack on ARK Protocol with instant vTXO transactions",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "vercel build",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "bitcoin",
+    "ark",
+    "casino",
+    "blackjack",
+    "vtxo",
+    "blackjark"
+  ],
+  "author": "Silex",
+  "license": "MIT",
+  "dependencies": {
+    "@vercel/kv": "^1.0.1",
+    "node-fetch": "^2.7.0",
+    "bitcoinjs-lib": "^6.1.5",
+    "bip32": "^4.0.0",
+    "bip39": "^3.1.0",
+    "tiny-secp256k1": "^2.2.3"
+  },
+  "devDependencies": {
+    "vercel": "^33.0.0"
+  }
+}

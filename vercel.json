@@ -1,0 +1,42 @@
+{
+  "version": 2,
+  "name": "blackjark",
+  "builds": [
+    {
+      "src": "public/blackjark-production.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "public/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/",
+      "dest": "/public/blackjark-production.html"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/public/$1"
+    }
+  ],
+  "env": {
+    "ASP_URL": "@asp_url",
+    "ASP_WALLET_ID": "@asp_wallet_id",
+    "ARK_NETWORK": "@ark_network"
+  },
+  "github": {
+    "enabled": true,
+    "autoAlias": true,
+    "silent": false
+  }
+}

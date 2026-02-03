@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⚡ BlackjARK - Casino on ARK Protocol</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Courier New', monospace;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      font-size: 2.5em;
+      color: #f39c12;
+      text-shadow: 0 0 10px rgba(243, 156, 18, 0.5);
+      margin-bottom: 10px;
+    }
+
+    .header .protocol-badge {
+      background: linear-gradient(90deg, #e74c3c, #c0392b);
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 0.9em;
+      display: inline-block;
+      box-shadow: 0 0 15px rgba(231, 76, 60, 0.5);
+    }
+
+    .stats {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .stat-box {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 15px 25px;
+      border-radius: 10px;
+      border: 1px solid rgba(243, 156, 18, 0.3);
+      min-width: 150px;
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 0.8em;
+      color: #bdc3c7;
+      margin-bottom: 5px;
+    }
+
+    .stat-value {
+      font-size: 1.5em;
+      color: #f39c12;
+      font-weight: bold;
+    }
+
+    .vtxo-count {
+      font-size: 0.7em;
+      color: #e74c3c;
+      margin-top: 3px;
+    }
+
+    .game-container {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(15px);
+      border-radius: 20px;
+      padding: 30px;
+      max-width: 800px;
+      width: 100%;
+      border: 2px solid rgba(243, 156, 18, 0.3);
+      box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      flex: 1;
+      min-width: 120px;
+      padding: 12px 20px;
+      font-size: 1em;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Courier New', monospace;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #f39c12, #e67e22);
+      color: #fff;
+      box-shadow: 0 5px 15px rgba(243, 156, 18, 0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 7px 20px rgba(243, 156, 18, 0.6);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #27ae60, #229954);
+      color: #fff;
+      box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #e74c3c, #c0392b);
+      color: #fff;
+      box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(5px);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: linear-gradient(135deg, #2c3e50, #34495e);
+      padding: 30px;
+      border-radius: 15px;
+      max-width: 500px;
+      width: 90%;
+      border: 2px solid rgba(243, 156, 18, 0.5);
+      box-shadow: 0 10px 50px rgba(0, 0, 0, 0.7);
+    }
+
+    .modal-content h2 {
+      color: #f39c12;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .deposit-info {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 15px;
+      border-radius: 10px;
+      margin: 15px 0;
+      word-break: break-all;
+    }
+
+    .ark-address {
+      background: #1a1a2e;
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 0.9em;
+      color: #f39c12;
+      margin: 10px 0;
+      text-align: center;
+      font-family: monospace;
+    }
+
+    .qr-code {
+      text-align: center;
+      margin: 20px 0;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+    }
+
+    input[type="number"],
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid rgba(243, 156, 18, 0.3);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.3);
+      color: #fff;
+      font-size: 1em;
+      font-family: 'Courier New', monospace;
+    }
+
+    .message {
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+      text-align: center;
+    }
+
+    .message.success {
+      background: rgba(39, 174, 96, 0.2);
+      border: 1px solid #27ae60;
+      color: #2ecc71;
+    }
+
+    .message.error {
+      background: rgba(231, 76, 60, 0.2);
+      border: 1px solid #e74c3c;
+      color: #e74c3c;
+    }
+
+    .message.info {
+      background: rgba(52, 152, 219, 0.2);
+      border: 1px solid #3498db;
+      color: #3498db;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(243, 156, 18, 0.3);
+      border-radius: 50%;
+      border-top-color: #f39c12;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .footer {
+      margin-top: 30px;
+      text-align: center;
+      color: #7f8c8d;
+      font-size: 0.9em;
+    }
+
+    .ark-info {
+      background: rgba(231, 76, 60, 0.1);
+      border: 1px solid rgba(231, 76, 60, 0.3);
+      border-radius: 10px;
+      padding: 15px;
+      margin: 20px 0;
+    }
+
+    .ark-info h3 {
+      color: #e74c3c;
+      margin-bottom: 10px;
+    }
+
+    .ark-info ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .ark-info li {
+      padding: 5px 0;
+      color: #ecf0f1;
+    }
+
+    .ark-info li:before {
+      content: "⚡ ";
+      color: #e74c3c;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>⚡ BLACKJARK</h1>
+    <div class="protocol-badge">Powered by ARK Protocol</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-box">
+      <div class="stat-label">Balance</div>
+      <div class="stat-value" id="balance">0</div>
+      <div class="vtxo-count" id="vtxo-count">0 vTXOs</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Parties jouées</div>
+      <div class="stat-value" id="games-played">0</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Total déposé</div>
+      <div class="stat-value" id="total-deposited">0</div>
+    </div>
+  </div>
+
+  <div class="game-container">
+    <div class="actions">
+      <button class="btn-success" onclick="openDepositModal()">💰 Déposer (ARK)</button>
+      <button class="btn-danger" onclick="openWithdrawModal()">💸 Retirer (ARK)</button>
+      <button class="btn-secondary" onclick="openArkInfo()">ℹ️ Info ARK</button>
+    </div>
+
+    <div id="message-container"></div>
+
+    <div class="actions">
+      <button class="btn-primary" onclick="playBlackjack()" id="play-btn">🎰 Jouer au Blackjack (100 sats)</button>
+    </div>
+  </div>
+
+  <!-- Modal Dépôt ARK -->
+  <div class="modal" id="deposit-modal">
+    <div class="modal-content">
+      <h2>💰 Dépôt ARK</h2>
+      <div class="ark-info">
+        <p>⚡ Envoyez des vTXOs ARK depuis votre wallet ArkSat vers l'adresse ci-dessous. Transaction instantanée !</p>
+      </div>
+      <input type="number" id="deposit-amount" placeholder="Montant (100-10000 sats)" min="100" max="10000" step="100">
+      <button class="btn-primary" onclick="createDeposit()">Générer adresse ARK</button>
+      
+      <div id="deposit-info" style="display: none;">
+        <div class="deposit-info">
+          <strong>Adresse ARK :</strong>
+          <div class="ark-address" id="deposit-address"></div>
+          <div class="qr-code" id="qr-code"></div>
+          <p style="text-align: center; margin-top: 10px; color: #2ecc71;">
+            ⚡ Transaction ARK instantanée - Pas d'attente !
+          </p>
+        </div>
+      </div>
+
+      <button class="btn-secondary" onclick="closeDepositModal()">Fermer</button>
+    </div>
+  </div>
+
+  <!-- Modal Retrait ARK -->
+  <div class="modal" id="withdraw-modal">
+    <div class="modal-content">
+      <h2>💸 Retrait ARK</h2>
+      <div class="ark-info">
+        <p>⚡ Vos vTXOs seront transférés instantanément vers l'adresse ARK de destination.</p>
+      </div>
+      <input type="text" id="withdraw-address" placeholder="Adresse ARK (ark1q...)">
+      <input type="number" id="withdraw-amount" placeholder="Montant (min 100 sats)" min="100" step="100">
+      <button class="btn-danger" onclick="createWithdrawal()">Retirer (Instantané)</button>
+      <button class="btn-secondary" onclick="closeWithdrawModal()">Annuler</button>
+    </div>
+  </div>
+
+  <!-- Modal Info ARK -->
+  <div class="modal" id="ark-info-modal">
+    <div class="modal-content">
+      <h2>ℹ️ Protocole ARK</h2>
+      <div class="ark-info">
+        <h3>Qu'est-ce qu'ARK ?</h3>
+        <ul>
+          <li>Second-layer Bitcoin utilisant des vTXOs (Virtual UTXOs)</li>
+          <li>Transactions instantanées et confidentielles</li>
+          <li>Pas de LN channels - directement on-chain compatible</li>
+          <li>Exit unilatéral garanti après 4 semaines</li>
+          <li>Compatible avec wallet ArkSat</li>
+        </ul>
+        <h3 style="margin-top: 20px;">Comment ça marche ?</h3>
+        <ul>
+          <li>Dépôt : BTC on-chain → vTXO ARK (1 conf)</li>
+          <li>Jeu : micro-tx instantanées entre vTXOs</li>
+          <li>Retrait : vTXO ARK → BTC on-chain</li>
+        </ul>
+      </div>
+      <button class="btn-secondary" onclick="closeArkInfo()">Fermer</button>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>⚡ BlackjARK - Casino Bitcoin on ARK Protocol - RTP 45% (truqué pour démo)</p>
+    <p>Transactions ARK instantanées - Utilisez le wallet ArkSat</p>
+  </div>
+
+  <script>
+    let session = null;
+    let depositCheckInterval = null;
+
+    // Initialiser la session
+    async function initSession() {
+      try {
+        const res = await fetch('/api/session', { credentials: 'include' });
+        session = await res.json();
+        updateUI();
+      } catch (error) {
+        showMessage('Erreur initialisation session', 'error');
+      }
+    }
+
+    // Mettre à jour l'interface
+    function updateUI() {
+      if (!session) return;
+      document.getElementById('balance').textContent = session.balance + ' sats';
+      document.getElementById('games-played').textContent = session.gamesPlayed || 0;
+      document.getElementById('total-deposited').textContent = (session.totalDeposited || 0) + ' sats';
+      document.getElementById('vtxo-count').textContent = (session.arkVtxos || 0) + ' vTXOs';
+      
+      document.getElementById('play-btn').disabled = session.balance < 100;
+    }
+
+    // Afficher un message
+    function showMessage(msg, type = 'info') {
+      const container = document.getElementById('message-container');
+      container.innerHTML = `<div class="message ${type}">${msg}</div>`;
+      setTimeout(() => container.innerHTML = '', 5000);
+    }
+
+    // Ouvrir modal dépôt
+    function openDepositModal() {
+      document.getElementById('deposit-modal').classList.add('active');
+    }
+
+    function closeDepositModal() {
+      document.getElementById('deposit-modal').classList.remove('active');
+      if (depositCheckInterval) {
+        clearInterval(depositCheckInterval);
+        depositCheckInterval = null;
+      }
+    }
+
+    // Créer un dépôt ARK
+    async function createDeposit() {
+      const amount = parseInt(document.getElementById('deposit-amount').value);
+      
+      if (!amount || amount < 100 || amount > 10000) {
+        showMessage('Montant invalide (100-10000 sats)', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/deposit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ amount })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          showMessage(data.error, 'error');
+          return;
+        }
+
+        // Afficher l'adresse ARK
+        document.getElementById('deposit-address').textContent = data.arkAddress;
+        document.getElementById('deposit-info').style.display = 'block';
+
+        // Générer QR code ARK
+        document.getElementById('qr-code').innerHTML = `
+          <div style="padding: 20px; background: white; color: black;">
+            <strong>QR Code ARK</strong><br>
+            <small>${data.qrCode}</small><br>
+            <small style="color: #27ae60; font-weight: bold;">⚡ Transaction instantanée</small>
+          </div>
+        `;
+
+        // Vérifier la réception toutes les 3 secondes (ARK est rapide !)
+        depositCheckInterval = setInterval(async () => {
+          const checkRes = await fetch(`/api/check-payment/${data.depositId}`, {
+            credentials: 'include'
+          });
+          const checkData = await checkRes.json();
+
+          if (checkData.paid) {
+            clearInterval(depositCheckInterval);
+            closeDepositModal();
+            showMessage(`⚡ Dépôt instantané ! +${checkData.amount} sats (${checkData.vtxosReceived} vTXO${checkData.vtxosReceived > 1 ? 's' : ''})`, 'success');
+            await initSession();
+          }
+        }, 3000); // Toutes les 3 secondes (ARK est rapide)
+
+      } catch (error) {
+        showMessage('Erreur création dépôt', 'error');
+      }
+    }
+
+    // Ouvrir modal retrait
+    function openWithdrawModal() {
+      document.getElementById('withdraw-modal').classList.add('active');
+    }
+
+    function closeWithdrawModal() {
+      document.getElementById('withdraw-modal').classList.remove('active');
+    }
+
+    // Créer un retrait ARK
+    async function createWithdrawal() {
+      const arkAddress = document.getElementById('withdraw-address').value.trim();
+      const amount = parseInt(document.getElementById('withdraw-amount').value);
+
+      if (!arkAddress) {
+        showMessage('Adresse ARK requise', 'error');
+        return;
+      }
+
+      if (!arkAddress.match(/^ark1q[a-z0-9]{40,90}$/)) {
+        showMessage('Adresse ARK invalide (format: ark1q...)', 'error');
+        return;
+      }
+
+      if (!amount || amount < 100) {
+        showMessage('Montant minimum: 100 sats', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/withdraw', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ arkAddress, amount })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          showMessage(data.error, 'error');
+          return;
+        }
+
+        closeWithdrawModal();
+        showMessage(`⚡ Retrait ARK instantané ! ${data.amount} sats envoyés (TX: ${data.txid})`, 'success');
+        await initSession();
+
+      } catch (error) {
+        showMessage('Erreur création retrait', 'error');
+      }
+    }
+
+    // Ouvrir/fermer modal info ARK
+    function openArkInfo() {
+      document.getElementById('ark-info-modal').classList.add('active');
+    }
+
+    function closeArkInfo() {
+      document.getElementById('ark-info-modal').classList.remove('active');
+    }
+
+    // Jouer au Blackjack
+    async function playBlackjack() {
+      if (session.balance < 100) {
+        showMessage('Balance insuffisante', 'error');
+        return;
+      }
+
+      const bet = 100;
+      
+      // Simuler partie (truqué 45% RTP)
+      const random = Math.random();
+      let result;
+      
+      if (random < 0.45) {
+        result = 'win';
+      } else if (random < 0.90) {
+        result = 'lose';
+      } else {
+        result = 'push';
+      }
+
+      try {
+        const res = await fetch('/api/game', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ bet, result })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          showMessage(data.error, 'error');
+          return;
+        }
+
+        if (result === 'win') {
+          showMessage(`🎉 GAGNÉ ! +${bet} sats`, 'success');
+        } else if (result === 'lose') {
+          showMessage(`😢 PERDU ! -${bet} sats`, 'error');
+        } else {
+          showMessage(`🤝 ÉGALITÉ ! Remboursement`, 'info');
+        }
+
+        await initSession();
+
+      } catch (error) {
+        showMessage('Erreur jeu', 'error');
+      }
+    }
+
+    // Initialiser au chargement
+    initSession();
+  </script>
+</body>
+</html>

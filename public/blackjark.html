@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⚡ BlackjARK - Casino on ARK Protocol</title>
+  
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="blackjark-style.css">
+</head>
+<body>
+  <!-- Three.js Canvas Background -->
+  <canvas id="cyberpunk-bg"></canvas>
+  
+  <!-- Cursor Trail -->
+  <canvas id="cursor-trail"></canvas>
+  
+  <!-- Scan Lines Effect -->
+  <div class="scanlines"></div>
+  
+  <!-- Main Container -->
+  <div class="app-container">
+    
+    <!-- Header -->
+    <header class="header">
+      <div class="logo-container">
+        <h1 class="title">
+          <span class="title-black">BLACK</span><span class="title-ark">jARK</span>
+        </h1>
+        <div class="subtitle">INSTANT VTXO CASINO</div>
+      </div>
+      
+      <div class="powered-by">
+        <span class="powered-text">Powered by</span>
+        <img src="arkade-logo.svg" alt="Arkade" class="arkade-logo">
+      </div>
+    </header>
+    
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat-card balance-card">
+        <div class="stat-label">Balance</div>
+        <div class="stat-value" id="balance">0</div>
+        <div class="stat-unit">sats</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-label">Games Played</div>
+        <div class="stat-value" id="games-played">0</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-label">vTXOs</div>
+        <div class="stat-value" id="vtxo-count">0</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-label">Win Rate</div>
+        <div class="stat-value" id="win-rate">0%</div>
+      </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="action-bar">
+      <button class="btn btn-primary" onclick="openDepositModal()">
+        <span class="btn-icon">💰</span>
+        <span class="btn-text">Deposit ARK</span>
+        <span class="btn-shimmer"></span>
+      </button>
+      
+      <button class="btn btn-danger" onclick="openWithdrawModal()">
+        <span class="btn-icon">💸</span>
+        <span class="btn-text">Withdraw</span>
+        <span class="btn-shimmer"></span>
+      </button>
+      
+      <button class="btn btn-secondary" onclick="showStats()">
+        <span class="btn-icon">📊</span>
+        <span class="btn-text">Stats</span>
+      </button>
+    </div>
+    
+    <!-- Game Container -->
+    <div class="game-container">
+      
+      <!-- Dealer Section -->
+      <div class="dealer-section">
+        <div class="section-label">
+          <span class="label-text">DEALER</span>
+          <span class="dealer-score" id="dealer-score">--</span>
+        </div>
+        <div class="cards-container" id="dealer-cards">
+          <!-- Cards will be added here -->
+        </div>
+      </div>
+      
+      <!-- Player Section -->
+      <div class="player-section">
+        <div class="section-label">
+          <span class="label-text">YOU</span>
+          <span class="player-score" id="player-score">--</span>
+        </div>
+        <div class="cards-container" id="player-cards">
+          <!-- Cards will be added here -->
+        </div>
+      </div>
+      
+      <!-- Game Controls -->
+      <div class="game-controls" id="game-controls">
+        <div class="bet-input-container">
+          <label for="bet-amount">BET AMOUNT</label>
+          <input type="number" id="bet-amount" value="100" min="100" max="1000" step="100">
+          <span class="input-unit">sats</span>
+        </div>
+        
+        <button class="btn btn-play" onclick="dealGame()">
+          <span class="btn-text">DEAL</span>
+          <span class="btn-shimmer"></span>
+        </button>
+      </div>
+      
+      <!-- In-Game Controls -->
+      <div class="in-game-controls hidden" id="in-game-controls">
+        <button class="btn btn-action" onclick="hit()">
+          <span class="btn-text">HIT</span>
+        </button>
+        <button class="btn btn-action" onclick="stand()">
+          <span class="btn-text">STAND</span>
+        </button>
+        <button class="btn btn-action" onclick="doubleDown()">
+          <span class="btn-text">DOUBLE</span>
+        </button>
+      </div>
+      
+      <!-- Game Status -->
+      <div class="game-status hidden" id="game-status">
+        <div class="status-text"></div>
+        <div class="status-payout"></div>
+      </div>
+    </div>
+    
+    <!-- Messages/Notifications -->
+    <div class="notification-container" id="notifications">
+      <!-- Notifications will appear here -->
+    </div>
+  </div>
+  
+  <!-- Deposit Modal -->
+  <div class="modal" id="deposit-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>⚡ Deposit ARK vTXOs</h2>
+        <button class="modal-close" onclick="closeDepositModal()">&times;</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="ark-info">
+          <p>Send vTXOs from your ArkSat wallet to deposit instantly.</p>
+        </div>
+        
+        <div class="input-group">
+          <label>Amount (100-10000 sats)</label>
+          <input type="number" id="deposit-amount" value="1000" min="100" max="10000" step="100">
+        </div>
+        
+        <button class="btn btn-primary full-width" onclick="createDeposit()">
+          Generate ARK Address
+        </button>
+        
+        <div class="deposit-info hidden" id="deposit-info">
+          <div class="qr-container" id="qr-code">
+            <!-- QR code here -->
+          </div>
+          <div class="address-display">
+            <label>ARK Address:</label>
+            <div class="address-box" id="deposit-address"></div>
+            <button class="btn-copy" onclick="copyAddress()">Copy</button>
+          </div>
+          <div class="instant-badge">
+            ⚡ INSTANT TRANSACTION
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Withdraw Modal -->
+  <div class="modal" id="withdraw-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>💸 Withdraw to ARK</h2>
+        <button class="modal-close" onclick="closeWithdrawModal()">&times;</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="ark-info">
+          <p>Withdraw your winnings instantly to any ARK address.</p>
+        </div>
+        
+        <div class="input-group">
+          <label>ARK Address (ark1q...)</label>
+          <input type="text" id="withdraw-address" placeholder="ark1q...">
+        </div>
+        
+        <div class="input-group">
+          <label>Amount (min 100 sats)</label>
+          <input type="number" id="withdraw-amount" value="500" min="100" step="100">
+        </div>
+        
+        <button class="btn btn-danger full-width" onclick="createWithdrawal()">
+          Withdraw Instantly
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Particle Effects Container -->
+  <div id="particle-effects"></div>
+  
+  <!-- Footer with Arkade Logo -->
+  <footer class="footer">
+    <div class="footer-content">
+      <a href="https://arkadeos.com" target="_blank" class="arkade-link">
+        <img src="arkade-logo.svg" alt="Arkade" class="arkade-logo-footer">
+      </a>
+      <div class="footer-text">
+        <span>Built on ARK Protocol</span>
+        <span class="footer-dot">•</span>
+        <span>Instant vTXO Transactions</span>
+      </div>
+    </div>
+  </footer>
+  
+  <!-- Scripts -->
+  <script src="blackjark-threejs.js"></script>
+  <script src="blackjark-effects.js"></script>
+  <script src="blackjark-game.js"></script>
+  <script src="blackjark-api.js"></script>
+</body>
+</html>
