@@ -1,13 +1,17 @@
 // api/session.js - Gestion des sessions joueur avec ARK
-const { kv } = require('@vercel/kv');
-const { randomBytes } = require('crypto');
+import { kv } from '@vercel/kv';
+import { randomBytes } from 'crypto';
 
 export default async function handler(req, res) {
-  // Permettre CORS
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // CORS
+  const origin = req.headers.origin;
+  const allowedOrigin = process.env.FRONTEND_URL || origin;
+  if (allowedOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
-  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
@@ -41,7 +45,7 @@ export default async function handler(req, res) {
         totalWithdrawn: 0,
         gamesPlayed: 0,
         createdAt: Date.now(),
-        arkVtxos: [], // Liste des vTXOs ARK disponibles
+        aspVtxos: [], // Liste des vTXOs ARK disponibles (gérés par l'ASP)
         pendingDeposits: [], // Dépôts ARK en attente
         arkAddress: null // Adresse ARK du joueur (dérivée)
       };
@@ -56,7 +60,7 @@ export default async function handler(req, res) {
       totalDeposited: player.totalDeposited,
       totalWithdrawn: player.totalWithdrawn,
       gamesPlayed: player.gamesPlayed,
-      arkVtxos: player.arkVtxos?.length || 0,
+      aspVtxos: player.aspVtxos?.length || 0,
       message: 'Session active avec protocole ARK'
     });
 

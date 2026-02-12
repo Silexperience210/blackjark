@@ -1,13 +1,18 @@
 // api/deposit.js - Créer un dépôt ARK via ASP
-const { kv } = require('@vercel/kv');
-const ASPClient = require('./asp-client');
+import { kv } from '@vercel/kv';
+import { randomBytes } from 'crypto';
+import ASPClient from './asp-client.js';
 
 const asp = new ASPClient();
 
 export default async function handler(req, res) {
   // CORS
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  const allowedOrigin = process.env.FRONTEND_URL || origin;
+  if (allowedOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -55,7 +60,7 @@ export default async function handler(req, res) {
     const label = `casino_${sessionId}_${Date.now()}`;
     const { address, aspId } = await asp.createDepositAddress(label);
     
-    const depositId = `deposit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const depositId = `deposit_${Date.now()}_${randomBytes(12).toString('hex')}`;
 
     // Sauvegarder dépôt en attente
     const depositKey = `deposit:${depositId}`;
@@ -95,9 +100,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Erreur création dépôt:', error);
-    res.status(500).json({ 
-      error: 'Erreur création dépôt ARK',
-      details: error.message 
-    });
+    res.status(500).json({ error: 'Erreur création dépôt ARK' });
   }
 }

@@ -1,14 +1,19 @@
 // api/admin/casino-stats.js - Stats du wallet casino via ASP (ADMIN ONLY)
-const { kv } = require('@vercel/kv');
-const ASPClient = require('../asp-client');
+import { kv } from '@vercel/kv';
+import ASPClient from '../asp-client.js';
 
 const asp = new ASPClient();
 
 export default async function handler(req, res) {
   // CORS
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  const allowedOrigin = process.env.FRONTEND_URL || origin;
+  if (allowedOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Admin-Key');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
@@ -20,11 +25,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    // TODO: Ajouter authentification admin ici
-    // const adminKey = req.headers['x-admin-key'];
-    // if (adminKey !== process.env.ADMIN_KEY) {
-    //   return res.status(401).json({ error: 'Unauthorized' });
-    // }
+    const adminKey = req.headers['x-admin-key'];
+    if (!process.env.ADMIN_KEY || adminKey !== process.env.ADMIN_KEY) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
     // Obtenir balance casino via ASP
     const casinoData = await asp.getCasinoBalance();
@@ -91,9 +95,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Erreur récupération stats casino:', error);
-    res.status(500).json({ 
-      error: 'Erreur serveur',
-      details: error.message 
-    });
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 }

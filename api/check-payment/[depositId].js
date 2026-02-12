@@ -1,14 +1,19 @@
 // api/check-payment/[depositId].js - Vérifier réception vTXO via ASP
-const { kv } = require('@vercel/kv');
-const ASPClient = require('../asp-client');
+import { kv } from '@vercel/kv';
+import ASPClient from '../asp-client.js';
 
 const asp = new ASPClient();
 
 export default async function handler(req, res) {
   // CORS
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  const allowedOrigin = process.env.FRONTEND_URL || origin;
+  if (allowedOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
@@ -46,52 +51,69 @@ export default async function handler(req, res) {
       });
     }
 
-    // Vérifier si des vTXOs ont été reçus via l'ASP
-    const receivedVTXOs = await asp.getAddressVTXOs(deposit.aspId);
+    // Lock pour éviter double-crédit
+    const lockKey = `lock:deposit:${depositId}`;
+    const lockAcquired = await kv.set(lockKey, '1', { nx: true, ex: 10 });
+    if (!lockAcquired) {
+      return res.status(200).json({ paid: false, status: 'processing' });
+    }
 
-    // Si au moins un vTXO reçu avec le bon montant
-    if (receivedVTXOs && receivedVTXOs.length > 0) {
-      const totalReceived = receivedVTXOs.reduce((sum, v) => sum + v.amount, 0);
-      
-      if (totalReceived >= deposit.amount) {
-        // Récupérer joueur
-        const player = await kv.get(`player:${deposit.sessionId}`);
-        
-        if (player) {
-          // Mettre à jour balance INSTANTANÉMENT (transaction ARK confirmée par l'ASP)
-          player.balance += deposit.amount;
-          player.totalDeposited += deposit.amount;
-          
-          // Ajouter les IDs des vTXOs reçus (gérés par l'ASP)
-          player.aspVtxos = player.aspVtxos || [];
-          receivedVTXOs.forEach(vtxo => {
-            if (!player.aspVtxos.includes(vtxo.id)) {
-              player.aspVtxos.push(vtxo.id);
-            }
-          });
+    try {
+      // Re-vérifier le status après lock (double-check)
+      const freshDeposit = await kv.get(depositKey);
+      if (freshDeposit && freshDeposit.status === 'completed') {
+        await kv.del(lockKey);
+        return res.status(200).json({ paid: true, amount: freshDeposit.amount });
+      }
 
-          // Retirer des dépôts en attente
-          player.pendingDeposits = (player.pendingDeposits || [])
-            .filter(d => d.depositId !== depositId);
+      // Vérifier si des vTXOs ont été reçus via l'ASP
+      const receivedVTXOs = await asp.getAddressVTXOs(deposit.aspId);
 
-          await kv.set(`player:${deposit.sessionId}`, player, { ex: 2592000 });
+      if (receivedVTXOs && receivedVTXOs.length > 0) {
+        const totalReceived = receivedVTXOs.reduce((sum, v) => sum + v.amount, 0);
 
-          // Marquer dépôt comme complété
-          deposit.status = 'completed';
-          deposit.vtxoIds = receivedVTXOs.map(v => v.id);
-          deposit.completedAt = Date.now();
-          await kv.set(depositKey, deposit, { ex: 86400 }); // 24h
+        if (totalReceived >= deposit.amount) {
+          const player = await kv.get(`player:${deposit.sessionId}`);
 
-          return res.status(200).json({
-            paid: true,
-            amount: deposit.amount,
-            newBalance: player.balance,
-            vtxoIds: receivedVTXOs.map(v => v.id),
-            instant: true, // Transaction ARK instantanée via ASP !
-            vtxosReceived: receivedVTXOs.length
-          });
+          if (player) {
+            player.balance += deposit.amount;
+            player.totalDeposited += deposit.amount;
+
+            player.aspVtxos = player.aspVtxos || [];
+            receivedVTXOs.forEach(vtxo => {
+              if (!player.aspVtxos.includes(vtxo.id)) {
+                player.aspVtxos.push(vtxo.id);
+              }
+            });
+
+            player.pendingDeposits = (player.pendingDeposits || [])
+              .filter(d => d.depositId !== depositId);
+
+            await kv.set(`player:${deposit.sessionId}`, player, { ex: 2592000 });
+
+            deposit.status = 'completed';
+            deposit.vtxoIds = receivedVTXOs.map(v => v.id);
+            deposit.completedAt = Date.now();
+            await kv.set(depositKey, deposit, { ex: 86400 });
+
+            await kv.del(lockKey);
+
+            return res.status(200).json({
+              paid: true,
+              amount: deposit.amount,
+              newBalance: player.balance,
+              vtxoIds: receivedVTXOs.map(v => v.id),
+              instant: true,
+              vtxosReceived: receivedVTXOs.length
+            });
+          }
         }
       }
+
+      await kv.del(lockKey);
+    } catch (lockError) {
+      await kv.del(lockKey);
+      throw lockError;
     }
 
     // Toujours en attente

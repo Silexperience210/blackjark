@@ -1,5 +1,4 @@
 // api/asp-client.js - Client pour ARK Service Provider (ArkadeOS)
-const fetch = require('node-fetch');
 
 /**
  * Client ASP - Interface avec un ARK Service Provider
@@ -262,4 +261,4 @@ class ASPClient {
   }
 }
 
-module.exports = ASPClient;
+export default ASPClient;

@@ -1,11 +1,16 @@
 // api/balance.js - Obtenir le solde ARK
-const { kv } = require('@vercel/kv');
+import { kv } from '@vercel/kv';
 
 export default async function handler(req, res) {
   // CORS
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  const allowedOrigin = process.env.FRONTEND_URL || origin;
+  if (allowedOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
@@ -34,15 +39,12 @@ export default async function handler(req, res) {
       totalDeposited: player.totalDeposited || 0,
       totalWithdrawn: player.totalWithdrawn || 0,
       gamesPlayed: player.gamesPlayed || 0,
-      arkVtxos: player.arkVtxos?.length || 0,
+      aspVtxos: player.aspVtxos?.length || 0,
       pendingDeposits: player.pendingDeposits?.length || 0
     });
 
   } catch (error) {
     console.error('Erreur récupération balance:', error);
-    res.status(500).json({ 
-      error: 'Erreur récupération balance',
-      details: error.message 
-    });
+    res.status(500).json({ error: 'Erreur récupération balance' });
   }
 }

@@ -1,13 +1,17 @@
 // api/withdraw.js - Retrait ARK via ASP
-const { kv } = require('@vercel/kv');
-const ASPClient = require('./asp-client');
+import { kv } from '@vercel/kv';
+import ASPClient from './asp-client.js';
 
 const asp = new ASPClient();
 
 export default async function handler(req, res) {
   // CORS
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  const allowedOrigin = process.env.FRONTEND_URL || origin;
+  if (allowedOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -27,9 +31,18 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Session requise' });
     }
 
+    // Lock pour éviter double-spend
+    const lockKey = `lock:withdraw:${sessionId}`;
+    const lockAcquired = await kv.set(lockKey, '1', { nx: true, ex: 10 });
+    if (!lockAcquired) {
+      return res.status(429).json({ error: 'Retrait déjà en cours, réessayez.' });
+    }
+
+    try {
     // Récupérer joueur
     const player = await kv.get(`player:${sessionId}`);
     if (!player) {
+      await kv.del(lockKey);
       return res.status(404).json({ error: 'Joueur non trouvé' });
     }
 
@@ -96,6 +109,8 @@ export default async function handler(req, res) {
       confirmedAt: Date.now() // Pas d'attente
     }, { ex: 86400 }); // 24h
 
+    await kv.del(lockKey);
+
     res.status(200).json({
       success: true,
       txid: withdrawal.txid,
@@ -103,15 +118,17 @@ export default async function handler(req, res) {
       destination: arkAddress,
       newBalance: player.balance,
       status: 'confirmed',
-      instant: true, // Transaction ARK instantanée !
+      instant: true,
       message: 'Retrait ARK confirmé instantanément !'
     });
 
+    } catch (innerError) {
+      await kv.del(lockKey);
+      throw innerError;
+    }
+
   } catch (error) {
     console.error('Erreur retrait:', error);
-    res.status(500).json({ 
-      error: 'Erreur retrait ARK',
-      details: error.message 
-    });
+    res.status(500).json({ error: 'Erreur retrait ARK' });
   }
 }
